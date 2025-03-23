@@ -1,0 +1,30 @@
+/* src/components/Square/Square.css */
+.square {
+    width: 60px;
+    height: 60px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+  }
+  
+  .light-square {
+    background-color: #f0d9b5;
+  }
+  
+  .dark-square {
+    background-color: #b58863;
+  }
+  
+  .selected-square {
+    background-color: #7b61ff;
+  }
+  
+  .valid-move-square::after {
+    content: '';
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.2);
+  }
