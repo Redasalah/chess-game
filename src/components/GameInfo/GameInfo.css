@@ -1,0 +1,161 @@
+/* src/components/GameInfo/GameInfo.css */
+
+.game-info {
+    width: 300px;
+    margin-left: 20px;
+    padding: 15px;
+    background-color: #f8f8f8;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    font-family: Arial, sans-serif;
+  }
+  
+  .status-section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 15px;
+  }
+  
+  .turn-indicator {
+    font-size: 18px;
+    margin-bottom: 10px;
+  }
+  
+  .player-white {
+    color: #000;
+    font-weight: bold;
+  }
+  
+  .player-black {
+    color: #333;
+    font-weight: bold;
+  }
+  
+  .game-message {
+    padding: 8px;
+    margin: 10px 0;
+    background-color: #ffe8d6;
+    border-left: 4px solid #d35400;
+    border-radius: 2px;
+  }
+  
+  .status-active {
+    color: #2ecc71;
+  }
+  
+  .status-check {
+    color: #e67e22;
+    font-weight: bold;
+  }
+  
+  .status-checkmate, .status-stalemate {
+    color: #e74c3c;
+    font-weight: bold;
+  }
+  
+  .controls-section {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .control-button {
+    padding: 8px 16px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .control-button:hover {
+    background-color: #2980b9;
+  }
+  
+  .control-button:disabled {
+    background-color: #bdc3c7;
+    cursor: not-allowed;
+  }
+  
+  .captured-pieces-section, .move-history-section {
+    margin-bottom: 20px;
+  }
+  
+  .captured-pieces-section h3, .move-history-section h3 {
+    margin-top: 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid #ddd;
+  }
+  
+  .captured-containers {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .captured-by-white, .captured-by-black {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .captured-by-white h4, .captured-by-black h4 {
+    margin: 0 0 8px 0;
+    font-size: 14px;
+  }
+  
+  .pieces-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+  
+  .captured-piece {
+    font-size: 24px;
+  }
+  
+  .no-captures, .no-moves {
+    color: #7f8c8d;
+    font-style: italic;
+    font-size: 14px;
+  }
+  
+  .move-history-section {
+    margin-top: 20px;
+  }
+  
+  .moves-list {
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 10px;
+    border-radius: 4px;
+  }
+  
+  .move-entry {
+    padding: 6px;
+    border-bottom: 1px solid #eee;
+    display: flex;
+    gap: 8px;
+  }
+  
+  .move-entry:last-child {
+    border-bottom: none;
+  }
+  
+  .move-entry:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+  
+  .move-number {
+    font-weight: bold;
+    color: #3498db;
+    min-width: 25px;
+  }
+  
+  .move-notation {
+    flex: 1;
+  }

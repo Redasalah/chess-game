@@ -1,34 +1,80 @@
 // src/components/Board/Board.jsx
-import React, { useState } from 'react';
+
+import React from 'react';
 import Square from '../Square/Square';
 import Piece from '../Piece/Piece';
-import { initialBoardSetup } from '../../utils/boardSetup';
-import { getPawnMoves, getRookMoves } from '../../utils/moveValidation';
+import { useGame } from '../../context/GameContext';
+import { 
+  getPawnMoves, 
+  getRookMoves, 
+  getKnightMoves, 
+  getBishopMoves, 
+  getQueenMoves, 
+  getKingMoves,
+  isKingInCheck
+} from '../../utils/moveValidation';
 import './Board.css';
 
-const Board = ({ currentPlayer, onTurnChange }) => {
-  const [boardState, setBoardState] = useState(initialBoardSetup());
-  const [selectedPiece, setSelectedPiece] = useState(null);
-  const [validMoves, setValidMoves] = useState([]);
+const Board = () => {
+  const { 
+    board, 
+    currentPlayer, 
+    selectedPiece, 
+    validMoves, 
+    selectPiece, 
+    movePiece 
+  } = useGame();
   
   const getValidMoves = (row, col, piece) => {
-    if (piece.type === 'pawn') {
-      return getPawnMoves(boardState, row, col, piece.color);
-    } else if (piece.type === 'rook') {
-      return getRookMoves(boardState, row, col, piece.color);
+    if (!piece) return [];
+    
+    let moves = [];
+    
+    switch (piece.type) {
+      case 'pawn':
+        moves = getPawnMoves(board, row, col, piece.color);
+        break;
+      case 'rook':
+        moves = getRookMoves(board, row, col, piece.color);
+        break;
+      case 'knight':
+        moves = getKnightMoves(board, row, col, piece.color);
+        break;
+      case 'bishop':
+        moves = getBishopMoves(board, row, col, piece.color);
+        break;
+      case 'queen':
+        moves = getQueenMoves(board, row, col, piece.color);
+        break;
+      case 'king':
+        moves = getKingMoves(board, row, col, piece.color);
+        break;
+      default:
+        break;
     }
-    return [];
+    
+    // Filter out moves that would leave king in check
+    return moves.filter(move => {
+      // Create a copy of the board
+      const newBoard = board.map(boardRow => [...boardRow]);
+      
+      // Simulate the move
+      newBoard[move.row][move.col] = piece;
+      newBoard[row][col] = null;
+      
+      // Check if this move would leave king in check
+      return !isKingInCheck(newBoard, piece.color);
+    });
   };
   
   const handlePieceClick = (position) => {
     const [row, col] = position.split(',').map(Number);
-    const piece = boardState[row][col];
+    const piece = board[row][col];
     
     // Only allow selecting pieces of the current player's color
     if (piece && piece.color === currentPlayer) {
-      const newValidMoves = getValidMoves(row, col, piece);
-      setSelectedPiece({ row, col, piece });
-      setValidMoves(newValidMoves);
+      const moves = getValidMoves(row, col, piece);
+      selectPiece({ row, col, piece }, moves);
     }
   };
   
@@ -36,21 +82,31 @@ const Board = ({ currentPlayer, onTurnChange }) => {
     // If we have a selected piece and the clicked square is a valid move
     if (selectedPiece && validMoves.some(move => move.row === row && move.col === col)) {
       // Create a copy of the board
-      const newBoard = boardState.map(row => [...row]);
+      const newBoard = board.map(boardRow => [...boardRow]);
+      
+      // Capture piece if present
+      const capturedPiece = newBoard[row][col];
       
       // Move the piece
       newBoard[row][col] = selectedPiece.piece;
       newBoard[selectedPiece.row][selectedPiece.col] = null;
       
-      // Update the board
-      setBoardState(newBoard);
+      // Create move record
+      const move = {
+        piece: selectedPiece.piece,
+        from: {
+          row: selectedPiece.row,
+          col: selectedPiece.col
+        },
+        to: {
+          row,
+          col
+        },
+        captured: capturedPiece
+      };
       
-      // Reset selection
-      setSelectedPiece(null);
-      setValidMoves([]);
-      
-      // Switch turns (Task 4.3)
-      onTurnChange(currentPlayer === 'white' ? 'black' : 'white');
+      // Update the game state
+      movePiece(newBoard, move, capturedPiece);
     }
   };
   
@@ -61,7 +117,7 @@ const Board = ({ currentPlayer, onTurnChange }) => {
       for (let col = 0; col < 8; col++) {
         const isLightSquare = (row + col) % 2 === 0;
         const position = `${row},${col}`;
-        const piece = boardState[row][col];
+        const piece = board[row][col];
         
         // Check if this square contains the selected piece
         const isSelected = selectedPiece && 

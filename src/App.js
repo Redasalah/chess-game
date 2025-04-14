@@ -1,24 +1,26 @@
 // src/App.js
-import React, { useState } from 'react';
+
+import React from 'react';
 import Board from './components/Board/Board';
+import GameInfo from './components/GameInfo/GameInfo';
+import GameMode from './components/GameMode/GameMode';
+import { GameProvider } from './context/GameContext';
 import './App.css';
 
 function App() {
-  const [currentPlayer, setCurrentPlayer] = useState('white');
-
   return (
-    <div className="App">
-      <h1>React Chess Game</h1>
-      <div className="turn-indicator">
-        Current Turn: {currentPlayer}
+    <GameProvider>
+      <div className="App">
+        <div className="app-header">
+          <h1>React Chess Game</h1>
+          <GameMode />
+        </div>
+        <div className="game-container">
+          <Board />
+          <GameInfo />
+        </div>
       </div>
-      <div className="game-container">
-        <Board 
-          currentPlayer={currentPlayer}
-          onTurnChange={(player) => setCurrentPlayer(player)}
-        />
-      </div>
-    </div>
+    </GameProvider>
   );
 }
 

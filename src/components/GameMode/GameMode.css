@@ -1,0 +1,103 @@
+/* src/components/GameMode/GameMode.css */
+
+.game-mode-container {
+    position: relative;
+    margin-bottom: 20px;
+  }
+  
+  .mode-toggle {
+    background-color: #fff;
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    font-weight: bold;
+  }
+  
+  .mode-toggle:hover {
+    background-color: #f5f5f5;
+  }
+  
+  .mode-panel {
+    position: absolute;
+    top: 40px;
+    right: 0;
+    width: 260px;
+    background-color: white;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 6px;
+    padding: 15px;
+    z-index: 100;
+  }
+  
+  .mode-panel h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+  }
+  
+  .mode-options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 15px;
+  }
+  
+  .mode-option {
+    background: none;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    text-align: left;
+  }
+  
+  .mode-option.selected {
+    border-color: #3498db;
+    background-color: #f0f8ff;
+  }
+  
+  .difficulty-options {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #eee;
+  }
+  
+  .difficulty-options h4 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    font-size: 14px;
+  }
+  
+  .radio-options {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .radio-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    cursor: pointer;
+  }
+  
+  .close-mode {
+    width: 100%;
+    padding: 8px;
+    background-color: #f5f5f5;
+    border: none;
+    border-radius: 4px;
+    margin-top: 15px;
+    cursor: pointer;
+  }
+  
+  .close-mode:hover {
+    background-color: #e5e5e5;
+  }
