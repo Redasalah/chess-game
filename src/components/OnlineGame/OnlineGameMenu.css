@@ -1,0 +1,91 @@
+/* src/components/OnlineGame/OnlineGameMenu.css */
+.online-game-menu {
+    max-width: 500px;
+    margin: 0 auto 30px;
+    padding: 20px;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .online-game-menu h2 {
+    text-align: center;
+    margin-top: 0;
+    color: #333;
+  }
+  
+  .menu-section {
+    margin-bottom: 20px;
+    padding-bottom: 20px;
+  }
+  
+  .menu-section h3 {
+    margin-top: 0;
+    font-size: 18px;
+    color: #444;
+  }
+  
+  .color-selection {
+    margin-bottom: 15px;
+  }
+  
+  .color-options {
+    display: flex;
+    gap: 20px;
+  }
+  
+  .game-id-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 15px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 16px;
+  }
+  
+  .create-game-btn, .join-game-btn {
+    width: 100%;
+    padding: 12px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .create-game-btn:hover, .join-game-btn:hover {
+    background-color: #2980b9;
+  }
+  
+  .menu-divider {
+    text-align: center;
+    margin: 20px 0;
+    color: #888;
+    position: relative;
+  }
+  
+  .menu-divider::before,
+  .menu-divider::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    width: 40%;
+    height: 1px;
+    background-color: #ddd;
+  }
+  
+  .menu-divider::before {
+    left: 0;
+  }
+  
+  .menu-divider::after {
+    right: 0;
+  }
+  
+  .error-message {
+    color: #e74c3c;
+    text-align: center;
+    margin-top: 15px;
+  }

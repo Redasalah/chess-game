@@ -1,9 +1,10 @@
 // src/components/Board/Board.jsx
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import Square from '../Square/Square';
 import Piece from '../Piece/Piece';
 import { useGame } from '../../context/GameContext';
+import { useOnlineGame } from '../../context/OnlineGameContext';
 import { 
   getPawnMoves, 
   getRookMoves, 
@@ -22,8 +23,25 @@ const Board = () => {
     selectedPiece, 
     validMoves, 
     selectPiece, 
-    movePiece 
+    movePiece,
+    setBoard,
+    setCurrentPlayer
   } = useGame();
+  
+  const { 
+    isOnline, 
+    playerColor, 
+    gameData, 
+    updateGame 
+  } = useOnlineGame();
+
+  // Update local board when online data changes
+  useEffect(() => {
+    if (isOnline && gameData && gameData.board) {
+      setBoard(gameData.board);
+      setCurrentPlayer(gameData.currentPlayer);
+    }
+  }, [isOnline, gameData, setBoard, setCurrentPlayer]);
   
   const getValidMoves = (row, col, piece) => {
     if (!piece) return [];
@@ -71,6 +89,13 @@ const Board = () => {
     const [row, col] = position.split(',').map(Number);
     const piece = board[row][col];
     
+    // In online mode, only allow moves on your turn with your color
+    if (isOnline) {
+      if (currentPlayer !== playerColor || piece?.color !== playerColor) {
+        return;
+      }
+    }
+    
     // Only allow selecting pieces of the current player's color
     if (piece && piece.color === currentPlayer) {
       const moves = getValidMoves(row, col, piece);
@@ -105,6 +130,11 @@ const Board = () => {
         captured: capturedPiece
       };
       
+      // In online mode, update remote game
+      if (isOnline) {
+        updateGame(newBoard, currentPlayer === 'white' ? 'black' : 'white');
+      }
+      
       // Update the game state
       movePiece(newBoard, move, capturedPiece);
     }
@@ -113,10 +143,17 @@ const Board = () => {
   const renderBoard = () => {
     const squares = [];
     
+    // Determine if board should be flipped for black perspective
+    const shouldFlipBoard = isOnline && playerColor === 'black';
+    
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
-        const isLightSquare = (row + col) % 2 === 0;
-        const position = `${row},${col}`;
+        // Calculate display coordinates (flipped if playing as black)
+        const displayRow = shouldFlipBoard ? 7 - row : row;
+        const displayCol = shouldFlipBoard ? 7 - col : col;
+        
+        const isLightSquare = (displayRow + displayCol) % 2 === 0;
+        const position = `${row},${col}`; // Original coordinates for data
         const piece = board[row][col];
         
         // Check if this square contains the selected piece
@@ -155,7 +192,17 @@ const Board = () => {
 
   return (
     <div className="chess-board">
-      {renderBoard()}
+      {isOnline && (
+        <div className="online-indicator">
+          Playing as: {playerColor} 
+          {currentPlayer === playerColor ? 
+            " (Your turn)" : 
+            " (Opponent's turn)"}
+        </div>
+      )}
+      <div className="board-container">
+        {renderBoard()}
+      </div>
     </div>
   );
 };
