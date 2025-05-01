@@ -4,50 +4,63 @@ import React, { useEffect } from 'react';
 import Square from '../Square/Square';
 import Piece from '../Piece/Piece';
 import { useGame } from '../../context/GameContext';
-import { useOnlineGame } from '../../context/OnlineGameContext';
-import { 
-  getPawnMoves, 
-  getRookMoves, 
-  getKnightMoves, 
-  getBishopMoves, 
-  getQueenMoves, 
+import { useSimpleOnline } from '../../context/SimpleOnlineContext';
+
+import {
+  getPawnMoves,
+  getRookMoves,
+  getKnightMoves,
+  getBishopMoves,
+  getQueenMoves,
   getKingMoves,
   isKingInCheck
 } from '../../utils/moveValidation';
+
 import './Board.css';
 
 const Board = () => {
-  const { 
-    board, 
-    currentPlayer, 
-    selectedPiece, 
-    validMoves, 
-    selectPiece, 
+  const {
+    board,
+    currentPlayer,
+    selectedPiece,
+    validMoves,
+    selectPiece,
     movePiece,
     setBoard,
     setCurrentPlayer
   } = useGame();
-  
-  const { 
-    isOnline, 
-    playerColor, 
-    gameData, 
-    updateGame 
-  } = useOnlineGame();
 
-  // Update local board when online data changes
+  const {
+    isOnline,
+    gameData,
+    playerColor,
+    sendOnlineMove,
+    remoteMove,
+    consumeRemoteMove
+  } = useSimpleOnline();
+
+  // Sync board with online game data when it changes
   useEffect(() => {
     if (isOnline && gameData && gameData.board) {
       setBoard(gameData.board);
       setCurrentPlayer(gameData.currentPlayer);
     }
   }, [isOnline, gameData, setBoard, setCurrentPlayer]);
-  
+
+  // Consume remote move
+  useEffect(() => {
+    if (remoteMove) {
+      setBoard(remoteMove.board);
+      setCurrentPlayer(remoteMove.currentPlayer);
+      consumeRemoteMove();
+    }
+  }, [remoteMove, consumeRemoteMove, setBoard, setCurrentPlayer]);
+
+  // Generate valid moves for a selected piece
   const getValidMoves = (row, col, piece) => {
     if (!piece) return [];
-    
+
     let moves = [];
-    
     switch (piece.type) {
       case 'pawn':
         moves = getPawnMoves(board, row, col, piece.color);
@@ -70,103 +83,85 @@ const Board = () => {
       default:
         break;
     }
-    
-    // Filter out moves that would leave king in check
+
+    // Filter out moves that would leave the king in check
     return moves.filter(move => {
-      // Create a copy of the board
-      const newBoard = board.map(boardRow => [...boardRow]);
-      
-      // Simulate the move
+      const newBoard = board.map(row => [...row]);
       newBoard[move.row][move.col] = piece;
       newBoard[row][col] = null;
-      
-      // Check if this move would leave king in check
       return !isKingInCheck(newBoard, piece.color);
     });
   };
-  
+
   const handlePieceClick = (position) => {
     const [row, col] = position.split(',').map(Number);
     const piece = board[row][col];
-    
-    // In online mode, only allow moves on your turn with your color
-    if (isOnline) {
-      if (currentPlayer !== playerColor || piece?.color !== playerColor) {
-        return;
-      }
+
+    // In online mode, restrict move to your turn and pieces
+    if (isOnline && (currentPlayer !== playerColor || piece?.color !== playerColor)) {
+      return;
     }
-    
-    // Only allow selecting pieces of the current player's color
+
     if (piece && piece.color === currentPlayer) {
       const moves = getValidMoves(row, col, piece);
       selectPiece({ row, col, piece }, moves);
     }
   };
-  
+
   const handleSquareClick = (row, col) => {
-    // If we have a selected piece and the clicked square is a valid move
-    if (selectedPiece && validMoves.some(move => move.row === row && move.col === col)) {
-      // Create a copy of the board
-      const newBoard = board.map(boardRow => [...boardRow]);
-      
-      // Capture piece if present
-      const capturedPiece = newBoard[row][col];
-      
-      // Move the piece
-      newBoard[row][col] = selectedPiece.piece;
-      newBoard[selectedPiece.row][selectedPiece.col] = null;
-      
-      // Create move record
-      const move = {
-        piece: selectedPiece.piece,
-        from: {
-          row: selectedPiece.row,
-          col: selectedPiece.col
-        },
-        to: {
-          row,
-          col
-        },
-        captured: capturedPiece
-      };
-      
-      // In online mode, update remote game
-      if (isOnline) {
-        updateGame(newBoard, currentPlayer === 'white' ? 'black' : 'white');
-      }
-      
-      // Update the game state
-      movePiece(newBoard, move, capturedPiece);
+    if (!selectedPiece) return;
+
+    const isMoveValid = validMoves.some(move => move.row === row && move.col === col);
+    if (!isMoveValid) return;
+
+    const newBoard = board.map(boardRow => [...boardRow]);
+
+    const capturedPiece = newBoard[row][col];
+
+    newBoard[row][col] = selectedPiece.piece;
+    newBoard[selectedPiece.row][selectedPiece.col] = null;
+
+    const move = {
+      piece: selectedPiece.piece,
+      from: { row: selectedPiece.row, col: selectedPiece.col },
+      to: { row, col },
+      captured: capturedPiece
+    };
+
+    const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
+
+    if (isOnline) {
+      sendOnlineMove(newBoard, nextPlayer);
     }
+
+    movePiece(newBoard, move, capturedPiece);
   };
-  
+
   const renderBoard = () => {
     const squares = [];
-    
-    // Determine if board should be flipped for black perspective
+
     const shouldFlipBoard = isOnline && playerColor === 'black';
-    
+
     for (let row = 0; row < 8; row++) {
       for (let col = 0; col < 8; col++) {
-        // Calculate display coordinates (flipped if playing as black)
         const displayRow = shouldFlipBoard ? 7 - row : row;
         const displayCol = shouldFlipBoard ? 7 - col : col;
-        
+
         const isLightSquare = (displayRow + displayCol) % 2 === 0;
-        const position = `${row},${col}`; // Original coordinates for data
+        const position = `${row},${col}`;
         const piece = board[row][col];
-        
-        // Check if this square contains the selected piece
-        const isSelected = selectedPiece && 
-                          selectedPiece.row === row && 
-                          selectedPiece.col === col;
-        
-        // Check if this is a valid move square
-        const isValidMove = validMoves.some(move => 
-          move.row === row && move.col === col);
-        
+
+        const isSelected =
+          selectedPiece &&
+          selectedPiece.row === row &&
+          selectedPiece.col === col;
+
+        const isValidMove = validMoves.some(
+          move => move.row === row && move.col === col
+        );
+
         squares.push(
-          <Square 
+          <Square
             key={position}
             isLight={isLightSquare}
             position={position}
@@ -175,9 +170,9 @@ const Board = () => {
             onClick={() => handleSquareClick(row, col)}
           >
             {piece && (
-              <Piece 
-                type={piece.type} 
-                color={piece.color} 
+              <Piece
+                type={piece.type}
+                color={piece.color}
                 position={position}
                 onClick={handlePieceClick}
               />
@@ -186,7 +181,7 @@ const Board = () => {
         );
       }
     }
-    
+
     return squares;
   };
 
@@ -194,15 +189,11 @@ const Board = () => {
     <div className="chess-board">
       {isOnline && (
         <div className="online-indicator">
-          Playing as: {playerColor} 
-          {currentPlayer === playerColor ? 
-            " (Your turn)" : 
-            " (Opponent's turn)"}
+          Playing as: {playerColor}
+          {currentPlayer === playerColor ? ' (Your turn)' : " (Opponent's turn)"}
         </div>
       )}
-      <div className="board-container">
-        {renderBoard()}
-      </div>
+      <div className="board-container">{renderBoard()}</div>
     </div>
   );
 };
