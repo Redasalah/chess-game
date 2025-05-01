@@ -1,9 +1,9 @@
-// Modified SimpleOnlineService.js
-import { v4 as uuidv4 } from 'uuid'; // You'll need to install this: npm install uuid
+// src/services/SimpleOnlineService.js
+import Peer from 'peerjs';
 
-// Store game state locally
-let gameState = null;
-let peerId = null;
+let peer = null;
+let connection = null;
+let gameId = null;
 let callbacks = {
   onGameJoined: () => {},
   onMoveMade: () => {},
@@ -11,77 +11,173 @@ let callbacks = {
   onDisconnect: () => {}
 };
 
-// Generate a random, memorable game ID
-const generateGameId = () => {
-  // This will create a shorter, easier to share ID
-  return uuidv4().substring(0, 8);
+// Initialize peer connection with better configuration
+export const initPeer = () => {
+  return new Promise((resolve, reject) => {
+    // Create a random user ID
+    const userId = 'chess_' + Math.random().toString(36).substr(2, 9);
+    console.log("Initializing peer with ID:", userId);
+    
+    // Create peer with better ICE server configuration
+    peer = new Peer(userId, {
+      debug: 3, // Enable detailed debugging
+      config: {
+        'iceServers': [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' },
+          { urls: 'stun:stun2.l.google.com:19302' },
+          // Add a free TURN server for better NAT traversal
+          {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+          }
+        ]
+      }
+    });
+    
+    peer.on('open', (id) => {
+      console.log('My peer ID is open:', id);
+      resolve(id);
+    });
+    
+    peer.on('error', (err) => {
+      console.error('Peer error:', err);
+      callbacks.onError(err);
+      reject(err);
+    });
+    
+    peer.on('connection', (conn) => {
+      console.log('Connection received from peer!');
+      connection = conn;
+      setupConnection();
+      
+      // The game ID is the remote peer's ID
+      gameId = conn.peer;
+      callbacks.onGameJoined({ gameId: conn.peer, isHost: false });
+    });
+    
+    // Add a timeout for connection
+    setTimeout(() => {
+      if (!peer.id) {
+        const timeoutErr = new Error("Connection timed out. Server might be unreachable.");
+        console.error('Peer connection timeout');
+        callbacks.onError(timeoutErr);
+        reject(timeoutErr);
+      }
+    }, 15000);
+  });
+};
+
+// Setup connection handlers with better error handling
+const setupConnection = () => {
+  if (!connection) {
+    console.error("No connection to setup");
+    return;
+  }
+  
+  connection.on('open', () => {
+    console.log('Connection is now open and ready');
+  });
+  
+  connection.on('data', (data) => {
+    console.log('Received data:', data);
+    
+    if (data.type === 'MOVE') {
+      console.log('Processing move data');
+      callbacks.onMoveMade(data.board, data.currentPlayer);
+    }
+  });
+  
+  connection.on('close', () => {
+    console.log('Connection closed');
+    callbacks.onDisconnect();
+  });
+  
+  connection.on('error', (err) => {
+    console.error('Connection error:', err);
+    callbacks.onError(err);
+  });
 };
 
 // Create a new game
 export const createGame = () => {
-  try {
-    // Generate a unique game ID
-    const newGameId = generateGameId();
-    console.log("Created game with ID:", newGameId);
-    
-    // Initialize local game state
-    gameState = {
-      id: newGameId,
-      isHost: true,
-      board: null,
-      currentPlayer: 'white'
-    };
-    
-    // Notify UI
-    setTimeout(() => {
-      callbacks.onGameJoined({ gameId: newGameId, isHost: true });
-    }, 500);
-    
-    return Promise.resolve({ gameId: newGameId, isHost: true });
-  } catch (error) {
-    console.error("Error creating game:", error);
-    return Promise.reject(error);
-  }
+  console.log("Creating new game...");
+  return initPeer().then((id) => {
+    gameId = id;
+    console.log("Game created with ID:", id);
+    return { gameId, isHost: true };
+  });
 };
 
-// Join an existing game 
+// Join an existing game with better error handling
 export const joinGame = (id) => {
+  return new Promise((resolve, reject) => {
+    console.log("Attempting to join game with ID:", id);
+    
+    if (!peer) {
+      console.log("No peer yet, initializing...");
+      initPeer().then(() => {
+        connectToPeer(id, resolve, reject);
+      }).catch(reject);
+    } else {
+      connectToPeer(id, resolve, reject);
+    }
+  });
+};
+
+// Connect to a peer with better visibility
+const connectToPeer = (id, resolve, reject) => {
   try {
-    console.log("Joining game with ID:", id);
+    console.log("Connecting to peer:", id);
+    connection = peer.connect(id, {
+      reliable: true,
+      serialization: 'json'
+    });
     
-    // In a real implementation, this would connect to the host
-    // For now, just create a local state
-    gameState = {
-      id: id,
-      isHost: false,
-      board: null,
-      currentPlayer: 'white'
-    };
+    // Set up timeouts
+    const connectionTimeout = setTimeout(() => {
+      if (!connection.open) {
+        console.error("Connection timed out");
+        reject(new Error("Connection timed out. Make sure the game ID is correct."));
+      }
+    }, 10000);
     
-    // Notify UI
-    setTimeout(() => {
-      callbacks.onGameJoined({ gameId: id, isHost: false });
-    }, 500);
+    connection.on('open', () => {
+      clearTimeout(connectionTimeout);
+      console.log('Connected to peer:', id);
+      gameId = id;
+      setupConnection();
+      resolve({ gameId: id, isHost: false });
+    });
     
-    return Promise.resolve({ gameId: id, isHost: false });
-  } catch (error) {
-    console.error("Error joining game:", error);
-    return Promise.reject(error);
+    connection.on('error', (err) => {
+      clearTimeout(connectionTimeout);
+      console.error('Connection error:', err);
+      reject(err);
+    });
+  } catch (err) {
+    console.error('Error connecting to peer:', err);
+    reject(err);
   }
 };
 
-// Send a move to opponent
+// Send a move to the opponent with better error handling
 export const sendMove = (board, currentPlayer) => {
-  if (!gameState) return false;
-  
-  // In a real implementation, this would send data to the opponent
-  console.log("Sending move:", { board, currentPlayer });
-  
-  // Store locally
-  gameState.board = board;
-  gameState.currentPlayer = currentPlayer;
-  
-  return true;
+  console.log("Attempting to send move");
+  if (connection && connection.open) {
+    console.log("Connection is open, sending move data");
+    connection.send({
+      type: 'MOVE',
+      board,
+      currentPlayer
+    });
+    return true;
+  } else {
+    console.error("Cannot send move - connection not open");
+    callbacks.onError(new Error("Connection lost. The other player may have disconnected."));
+    return false;
+  }
 };
 
 // Set callbacks
@@ -89,8 +185,17 @@ export const setCallbacks = (newCallbacks) => {
   callbacks = { ...callbacks, ...newCallbacks };
 };
 
-// Disconnect
+// Disconnect with cleanup
 export const disconnect = () => {
-  gameState = null;
-  console.log("Disconnected from game");
+  console.log("Disconnecting...");
+  if (connection) {
+    connection.close();
+  }
+  if (peer) {
+    peer.disconnect();
+    peer.destroy();
+  }
+  peer = null;
+  connection = null;
+  gameId = null;
 };

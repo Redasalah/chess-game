@@ -16,38 +16,50 @@ export const SimpleOnlineProvider = ({ children }) => {
     isOnline: false,
     gameId: null,
     isHost: false,
-    error: null
+    error: null,
+    playerColor: null,
+    connectionStatus: 'disconnected' // New state to track connection
   });
   
   const [remoteMove, setRemoteMove] = useState(null);
   
   useEffect(() => {
-    // Set up callbacks for the online service
+    // Set up callbacks
     setCallbacks({
       onGameJoined: (data) => {
-        setOnlineState({
+        console.log("Game joined callback:", data);
+        setOnlineState(prev => ({
+          ...prev,
           isOnline: true,
           gameId: data.gameId,
           isHost: data.isHost,
+          playerColor: data.isHost ? 'white' : 'black',
+          connectionStatus: 'connected',
           error: null
-        });
+        }));
       },
       onMoveMade: (board, currentPlayer) => {
-        setRemoteMove({ board, currentPlayer });
+        console.log("Move made callback:", { boardUpdated: !!board });
+        if (board) {
+          setRemoteMove({ board, currentPlayer });
+        }
       },
       onError: (error) => {
+        console.error("Connection error:", error);
         setOnlineState(prev => ({
           ...prev,
-          error: error.message || "Connection error"
+          error: error.message || "Connection error",
+          connectionStatus: 'error'
         }));
       },
       onDisconnect: () => {
-        setOnlineState({
+        console.log("Disconnect callback fired");
+        setOnlineState(prev => ({
+          ...prev,
           isOnline: false,
-          gameId: null,
-          isHost: false,
+          connectionStatus: 'disconnected',
           error: "Disconnected from game"
-        });
+        }));
       }
     });
     
@@ -59,11 +71,22 @@ export const SimpleOnlineProvider = ({ children }) => {
   
   const createOnlineGame = async () => {
     try {
-      const result = await createGame();
-      return result;
-    } catch (error) {
       setOnlineState(prev => ({
         ...prev,
+        connectionStatus: 'connecting',
+        error: null
+      }));
+      
+      const result = await createGame();
+      console.log("Game created:", result);
+      
+      // Update state is handled by callbacks now
+      return result;
+    } catch (error) {
+      console.error("Failed to create game:", error);
+      setOnlineState(prev => ({
+        ...prev,
+        connectionStatus: 'error',
         error: error.message || "Failed to create game"
       }));
       throw error;
@@ -72,11 +95,22 @@ export const SimpleOnlineProvider = ({ children }) => {
   
   const joinOnlineGame = async (id) => {
     try {
-      const result = await joinGame(id);
-      return result;
-    } catch (error) {
       setOnlineState(prev => ({
         ...prev,
+        connectionStatus: 'connecting',
+        error: null
+      }));
+      
+      const result = await joinGame(id);
+      console.log("Game joined:", result);
+      
+      // Update state is handled by callbacks now
+      return result;
+    } catch (error) {
+      console.error("Failed to join game:", error);
+      setOnlineState(prev => ({
+        ...prev,
+        connectionStatus: 'error',
         error: error.message || "Failed to join game"
       }));
       throw error;
@@ -84,6 +118,12 @@ export const SimpleOnlineProvider = ({ children }) => {
   };
   
   const sendOnlineMove = (board, currentPlayer) => {
+    console.log("Sending online move");
+    if (!onlineState.isOnline) {
+      console.error("Not online, can't send move");
+      return false;
+    }
+    
     return sendMove(board, currentPlayer);
   };
   
@@ -93,7 +133,9 @@ export const SimpleOnlineProvider = ({ children }) => {
       isOnline: false,
       gameId: null,
       isHost: false,
-      error: null
+      error: null,
+      playerColor: null,
+      connectionStatus: 'disconnected'
     });
   };
   
