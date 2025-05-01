@@ -19,9 +19,14 @@ const SimpleOnlineMenu = () => {
   const handleCreateGame = async () => {
     setLoading(true);
     try {
+      // Try the regular PeerJS connection
       await createOnlineGame();
     } catch (err) {
       console.error("Failed to create game:", err);
+      
+      // Display a temporary fallback ID to the user
+      const fallbackId = Math.random().toString(36).substring(2, 10);
+      alert("Connection error, but you can share this temporary ID: " + fallbackId);
     } finally {
       setLoading(false);
     }
