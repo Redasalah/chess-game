@@ -1,104 +1,157 @@
 // src/components/OnlineGame/OnlineGameMenu.jsx
 import React, { useState } from 'react';
-import { createGame, joinGame } from '../../services/onlineGameService';
+import { useOnline } from '../../context/OnlineContext';
 import './OnlineGameMenu.css';
 
-const OnlineGameMenu = ({ onGameStart }) => {
-  const [gameId, setGameId] = useState('');
-  const [playerColor, setPlayerColor] = useState('white');
+const OnlineGameMenu = () => {
+  const [gameIdToJoin, setGameIdToJoin] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const [showMenu, setShowMenu] = useState(true);
+  
+  const {
+    isOnline,
+    gameId,
+    isHost,
+    error,
+    waitingForOpponent,
+    connectionStatus,
+    createOnlineGame,
+    joinOnlineGame,
+    leaveOnlineGame,
+    playerColor
+  } = useOnline();
   
   const handleCreateGame = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      setError('');
-      const result = await createGame(playerColor);
-      onGameStart(result);
+      await createOnlineGame();
     } catch (err) {
-      setError('Failed to create game: ' + err.message);
+      console.error("Failed to create game:", err);
     } finally {
       setLoading(false);
     }
   };
   
   const handleJoinGame = async () => {
-    if (!gameId.trim()) {
-      setError('Please enter a game ID');
+    if (!gameIdToJoin.trim()) {
+      alert("Please enter a game ID");
       return;
     }
     
+    setLoading(true);
     try {
-      setLoading(true);
-      setError('');
-      const result = await joinGame(gameId);
-      onGameStart(result);
+      await joinOnlineGame(gameIdToJoin.trim());
     } catch (err) {
-      setError('Failed to join game: ' + err.message);
+      console.error("Failed to join game:", err);
     } finally {
       setLoading(false);
     }
   };
   
-  return (
-    <div className="online-game-menu">
-      <h2>Play Online</h2>
-      
-      <div className="menu-section">
-        <h3>Create a New Game</h3>
-        <div className="color-selection">
-          <p>Play as:</p>
-          <div className="color-options">
-            <label>
-              <input
-                type="radio"
-                value="white"
-                checked={playerColor === 'white'}
-                onChange={() => setPlayerColor('white')}
-              />
-              White
-            </label>
-            <label>
-              <input
-                type="radio"
-                value="black"
-                checked={playerColor === 'black'}
-                onChange={() => setPlayerColor('black')}
-              />
-              Black
-            </label>
+  const copyGameId = () => {
+    navigator.clipboard.writeText(gameId)
+      .then(() => alert("Game ID copied to clipboard!"))
+      .catch(err => console.error("Failed to copy:", err));
+  };
+  
+  if (!showMenu) {
+    return (
+      <button 
+        className="open-online-menu-btn"
+        onClick={() => setShowMenu(true)}
+      >
+        Show Online Menu
+      </button>
+    );
+  }
+  
+  if (isOnline) {
+    return (
+      <div className="online-game-menu">
+        <div className="menu-header">
+          <h3>Online Game</h3>
+          <button 
+            className="minimize-btn"
+            onClick={() => setShowMenu(false)}
+          >
+            −
+          </button>
+        </div>
+        
+        <div className="game-status">
+          <p>
+            {waitingForOpponent 
+              ? "Waiting for opponent to join..." 
+              : "Connected to game"}
+          </p>
+          <p>
+            You are playing as: <strong>{playerColor === 'white' ? 'White' : 'Black'}</strong>
+          </p>
+          <div className="game-id-container">
+            <span>Game ID: </span>
+            <span className="game-id">{gameId}</span>
+            <button 
+              className="copy-btn" 
+              onClick={copyGameId}
+            >
+              Copy
+            </button>
           </div>
         </div>
+        <button className="leave-button" onClick={leaveOnlineGame}>
+          Leave Game
+        </button>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="online-game-menu">
+      <div className="menu-header">
+        <h3>Play Online</h3>
+        <button 
+          className="minimize-btn"
+          onClick={() => setShowMenu(false)}
+        >
+          −
+        </button>
+      </div>
+      
+      {error && <p className="error-message">{error}</p>}
+      {connectionStatus === 'connecting' && (
+        <div className="connecting-message">Connecting...</div>
+      )}
+      
+      <div className="menu-section">
+        <h4>Create a New Game</h4>
         <button 
           className="create-game-btn" 
           onClick={handleCreateGame}
-          disabled={loading}
+          disabled={loading || connectionStatus === 'connecting'}
         >
-          {loading ? 'Creating...' : 'Create Game'}
+          {loading ? "Creating..." : "Create Game"}
         </button>
       </div>
       
       <div className="menu-divider">OR</div>
       
       <div className="menu-section">
-        <h3>Join a Game</h3>
+        <h4>Join a Game</h4>
         <input
           type="text"
           placeholder="Enter Game ID"
-          value={gameId}
-          onChange={(e) => setGameId(e.target.value)}
+          value={gameIdToJoin}
+          onChange={(e) => setGameIdToJoin(e.target.value)}
           className="game-id-input"
         />
         <button 
           className="join-game-btn" 
           onClick={handleJoinGame}
-          disabled={loading}
+          disabled={loading || connectionStatus === 'connecting'}
         >
-          {loading ? 'Joining...' : 'Join Game'}
+          {loading ? "Joining..." : "Join Game"}
         </button>
       </div>
-      
-      {error && <div className="error-message">{error}</div>}
     </div>
   );
 };

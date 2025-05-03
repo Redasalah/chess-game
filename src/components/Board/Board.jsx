@@ -1,10 +1,9 @@
 // src/components/Board/Board.jsx
-
 import React, { useEffect } from 'react';
 import Square from '../Square/Square';
 import Piece from '../Piece/Piece';
 import { useGame } from '../../context/GameContext';
-import { useSimpleOnline } from '../../context/SimpleOnlineContext';
+import { useOnline } from '../../context/OnlineContext';
 
 import {
   getPawnMoves,
@@ -27,34 +26,54 @@ const Board = () => {
     selectPiece,
     movePiece,
     setBoard,
-    setCurrentPlayer
+    setCurrentPlayer,
+    gameStatus
   } = useGame();
 
   const {
     isOnline,
-    gameData,
     playerColor,
+    gameStarted,
+    waitingForOpponent,
+    opponentDisconnected,
     sendOnlineMove,
     remoteMove,
     consumeRemoteMove
-  } = useSimpleOnline();
+  } = useOnline();
 
-  // Sync board with online game data when it changes
-  useEffect(() => {
-    if (isOnline && gameData && gameData.board) {
-      setBoard(gameData.board);
-      setCurrentPlayer(gameData.currentPlayer);
-    }
-  }, [isOnline, gameData, setBoard, setCurrentPlayer]);
-
-  // Consume remote move
+  // Consume remote move when received
   useEffect(() => {
     if (remoteMove) {
-      setBoard(remoteMove.board);
-      setCurrentPlayer(remoteMove.currentPlayer);
+      // Transform the move format if needed
+      const move = {
+        from: remoteMove.from,
+        to: remoteMove.to,
+        promotion: remoteMove.promotion || 'q'
+      };
+      
+      // Apply the move to the board
+      const newBoard = board.map(row => [...row]);
+      const piece = newBoard[move.from.row][move.from.col];
+      const capturedPiece = newBoard[move.to.row][move.to.col];
+      
+      newBoard[move.to.row][move.to.col] = piece;
+      newBoard[move.from.row][move.from.col] = null;
+      
+      const moveObj = {
+        piece,
+        from: { row: move.from.row, col: move.from.col },
+        to: { row: move.to.row, col: move.to.col },
+        captured: capturedPiece
+      };
+      
+      // Update the game state
+      setBoard(newBoard);
+      movePiece(newBoard, moveObj, capturedPiece);
+      
+      // Clear the remote move
       consumeRemoteMove();
     }
-  }, [remoteMove, consumeRemoteMove, setBoard, setCurrentPlayer]);
+  }, [remoteMove, consumeRemoteMove, board, setBoard, movePiece]);
 
   // Generate valid moves for a selected piece
   const getValidMoves = (row, col, piece) => {
@@ -86,7 +105,7 @@ const Board = () => {
 
     // Filter out moves that would leave the king in check
     return moves.filter(move => {
-      const newBoard = board.map(row => [...row]);
+      const newBoard = board.map(boardRow => [...boardRow]);
       newBoard[move.row][move.col] = piece;
       newBoard[row][col] = null;
       return !isKingInCheck(newBoard, piece.color);
@@ -97,9 +116,17 @@ const Board = () => {
     const [row, col] = position.split(',').map(Number);
     const piece = board[row][col];
 
-    // In online mode, restrict move to your turn and pieces
-    if (isOnline && (currentPlayer !== playerColor || piece?.color !== playerColor)) {
-      return;
+    // In online mode, check if it's player's turn and piece
+    if (isOnline) {
+      // If waiting for opponent or game not started, don't allow moves
+      if (waitingForOpponent || !gameStarted) {
+        return;
+      }
+      
+      // Only allow moves for the player's color and on their turn
+      if (currentPlayer !== playerColor || piece?.color !== playerColor) {
+        return;
+      }
     }
 
     if (piece && piece.color === currentPlayer) {
@@ -110,6 +137,11 @@ const Board = () => {
 
   const handleSquareClick = (row, col) => {
     if (!selectedPiece) return;
+
+    // Check if the game is over or waiting for opponent in online mode
+    if (isOnline && (waitingForOpponent || !gameStarted || opponentDisconnected || gameStatus !== 'active')) {
+      return;
+    }
 
     const isMoveValid = validMoves.some(move => move.row === row && move.col === col);
     if (!isMoveValid) return;
@@ -128,18 +160,25 @@ const Board = () => {
       captured: capturedPiece
     };
 
-    const nextPlayer = currentPlayer === 'white' ? 'black' : 'white';
-
+    // In online mode, send the move to the opponent
     if (isOnline) {
-      sendOnlineMove(newBoard, nextPlayer);
+      const moveToSend = {
+        from: { row: selectedPiece.row, col: selectedPiece.col },
+        to: { row, col },
+        promotion: 'q' // Default promotion to queen
+      };
+      
+      sendOnlineMove(moveToSend);
     }
 
+    // Update the game state
     movePiece(newBoard, move, capturedPiece);
   };
 
   const renderBoard = () => {
     const squares = [];
 
+    // Flip the board for black player in online mode
     const shouldFlipBoard = isOnline && playerColor === 'black';
 
     for (let row = 0; row < 8; row++) {
@@ -189,8 +228,19 @@ const Board = () => {
     <div className="chess-board">
       {isOnline && (
         <div className="online-indicator">
-          Playing as: {playerColor}
-          {currentPlayer === playerColor ? ' (Your turn)' : " (Opponent's turn)"}
+          {waitingForOpponent ? (
+            <span className="waiting">Waiting for opponent to join...</span>
+          ) : opponentDisconnected ? (
+            <span className="disconnected">Opponent disconnected</span>
+          ) : (
+            <>
+              <span>Playing as: <strong>{playerColor}</strong></span>
+              {currentPlayer === playerColor ? 
+                <span className="your-turn"> (Your turn)</span> : 
+                <span className="opponent-turn"> (Opponent's turn)</span>
+              }
+            </>
+          )}
         </div>
       )}
       <div className="board-container">{renderBoard()}</div>

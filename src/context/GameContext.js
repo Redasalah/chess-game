@@ -1,8 +1,7 @@
-// Update your GameContext.js with this code
-// Make sure to add the necessary imports and state fields
-
+// src/context/GameContext.js - updated with online integration
 import React, { createContext, useContext, useReducer, useEffect } from 'react';
 import { initialBoardSetup } from '../utils/boardSetup';
+import { useOnline } from './OnlineContext';
 import { 
   getPawnMoves, 
   getRookMoves, 
@@ -29,7 +28,7 @@ const initialState = {
   },
   gameStatus: 'active', // active, check, checkmate, stalemate
   message: '',
-  gameMode: 'human', // 'human' or 'computer'
+  gameMode: 'human', // 'human', 'computer', or 'online'
   difficulty: 'medium', // 'easy', 'medium', 'hard'
   computerColor: 'black', // The color the computer plays
   isComputerThinking: false
@@ -41,7 +40,8 @@ const actions = {
   MOVE_PIECE: 'MOVE_PIECE',
   RESET_GAME: 'RESET_GAME',
   UNDO_MOVE: 'UNDO_MOVE',
-  SET_GAME_OPTIONS: 'SET_GAME_OPTIONS'
+  SET_GAME_OPTIONS: 'SET_GAME_OPTIONS',
+  SET_BOARD: 'SET_BOARD'
 };
 
 // Reducer function
@@ -96,6 +96,13 @@ const gameReducer = (state, action) => {
         gameStatus,
         message,
         isComputerThinking: false
+      };
+    
+    case actions.SET_BOARD:
+      return {
+        ...state,
+        board: action.payload.board,
+        currentPlayer: action.payload.currentPlayer || state.currentPlayer
       };
       
     case actions.RESET_GAME:
@@ -156,6 +163,30 @@ const GameContext = createContext();
 // Provider component
 export const GameProvider = ({ children }) => {
   const [state, dispatch] = useReducer(gameReducer, initialState);
+  const { isOnline, playerColor, gameStarted, opponentDisconnected } = useOnline();
+  
+  // Update game mode based on online status
+  useEffect(() => {
+    if (isOnline) {
+      dispatch({
+        type: actions.SET_GAME_OPTIONS,
+        payload: { gameMode: 'online' }
+      });
+    }
+  }, [isOnline]);
+  
+  // Handle game over when opponent disconnects
+  useEffect(() => {
+    if (opponentDisconnected && state.gameStatus === 'active') {
+      dispatch({
+        type: actions.SET_GAME_OPTIONS,
+        payload: { 
+          gameStatus: 'disconnected',
+          message: 'Opponent disconnected. You win!'
+        }
+      });
+    }
+  }, [opponentDisconnected, state.gameStatus]);
   
   // Computer Move Logic
   useEffect(() => {
@@ -242,6 +273,13 @@ export const GameProvider = ({ children }) => {
     });
   };
   
+  const setBoard = (newBoard, currentPlayer) => {
+    dispatch({
+      type: actions.SET_BOARD,
+      payload: { board: newBoard, currentPlayer }
+    });
+  };
+  
   const resetGame = () => {
     dispatch({ type: actions.RESET_GAME });
   };
@@ -289,7 +327,8 @@ export const GameProvider = ({ children }) => {
     resetGame,
     undoMove,
     setGameOptions,
-    moveToNotation
+    moveToNotation,
+    setBoard
   };
   
   return (

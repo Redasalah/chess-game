@@ -1,4 +1,4 @@
-// src/components/Square/Square.jsx - update the Square component
+// src/components/Square/Square.jsx
 import React from 'react';
 import './Square.css';
 

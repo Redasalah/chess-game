@@ -1,30 +1,30 @@
 /* src/components/Square/Square.css */
 .square {
-    width: 60px;
-    height: 60px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    position: relative;
-  }
-  
-  .light-square {
-    background-color: #f0d9b5;
-  }
-  
-  .dark-square {
-    background-color: #b58863;
-  }
-  
-  .selected-square {
-    background-color: #7b61ff;
-  }
-  
-  .valid-move-square::after {
-    content: '';
-    position: absolute;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background-color: rgba(0, 0, 0, 0.2);
-  }
+  width: 80px;  /* Wider than height for horizontal/rectangular shape */
+  height: 50px;  /* Shorter height for rectangular appearance */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+}
+
+.light-square {
+  background-color: #f0d9b5;
+}
+
+.dark-square {
+  background-color: #b58863;
+}
+
+.selected-square {
+  background-color: #7b61ff;
+}
+
+.valid-move-square::after {
+  content: '';
+  position: absolute;
+  width: 20px;
+  height: 15px;  /* Adjust for rectangular shape */
+  border-radius: 45%;  /* Less circular for rectangular shape */
+  background-color: rgba(0, 0, 0, 0.2);
+}

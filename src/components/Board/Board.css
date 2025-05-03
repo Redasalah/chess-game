@@ -7,14 +7,36 @@
 
 .board-container {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(8, 1fr);
-  width: 480px;
-  height: 480px;
+  grid-template-columns: repeat(8, 80px); /* Wider columns */
+  grid-template-rows: repeat(8, 50px); /* Shorter rows */
+  width: 640px; /* 8 columns * 80px */
+  height: 400px; /* 8 rows * 50px */
   border: 2px solid #333;
 }
 
 .online-indicator {
-  margin-bottom: 10px;
+  margin-bottom: 15px;
+  padding: 10px;
   font-weight: bold;
+  background-color: #f8f9fa;
+  border-radius: 8px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.online-indicator .waiting {
+  color: #f39c12;
+}
+
+.online-indicator .disconnected {
+  color: #e74c3c;
+}
+
+.online-indicator .your-turn {
+  color: #2ecc71;
+  font-weight: bold;
+}
+
+.online-indicator .opponent-turn {
+  color: #e67e22;
 }

@@ -1,18 +1,18 @@
-// src/App.js
+// src/App.js - Updated with online functionality
 import React, { useState } from 'react';
 import Board from './components/Board/Board';
 import GameInfo from './components/GameInfo/GameInfo';
 import GameMode from './components/GameMode/GameMode';
-import SimpleOnlineMenu from './components/SimpleOnline/SimpleOnlineMenu';
+import OnlineGameMenu from './components/OnlineGame/OnlineGameMenu';
 import { GameProvider } from './context/GameContext';
-import { SimpleOnlineProvider } from './context/SimpleOnlineContext';
+import { OnlineProvider } from './context/OnlineContext';
 import './App.css';
 
 function App() {
   const [showOnlineMenu, setShowOnlineMenu] = useState(false);
 
   return (
-    <SimpleOnlineProvider>
+    <OnlineProvider>
       <GameProvider>
         <div className="App">
           <h1>React Chess Game</h1>
@@ -27,7 +27,7 @@ function App() {
             </button>
           </div>
           
-          {showOnlineMenu && <SimpleOnlineMenu />}
+          {showOnlineMenu && <OnlineGameMenu />}
           
           <div className="game-container">
             <Board />
@@ -35,7 +35,7 @@ function App() {
           </div>
         </div>
       </GameProvider>
-    </SimpleOnlineProvider>
+    </OnlineProvider>
   );
 }
 

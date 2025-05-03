@@ -1,14 +1,19 @@
 /* src/components/Piece/Piece.css */
 .piece {
-    font-size: 40px;
-    cursor: pointer;
-  }
-  
-  .white-piece {
-    color: #fff;
-    text-shadow: 0 0 2px #000;
-  }
-  
-  .black-piece {
-    color: #000;
-  }
+  font-size: 34px; /* Slightly smaller for rectangular squares */
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.white-piece {
+  color: #fff;
+  text-shadow: 0 0 2px #000;
+}
+
+.black-piece {
+  color: #000;
+}

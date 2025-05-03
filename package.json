@@ -9,12 +9,15 @@
     "@testing-library/user-event": "^13.5.0",
     "chess.js": "^1.2.0",
     "classnames": "^2.5.1",
+    "express": "^4.21.2",
     "firebase": "^11.6.0",
     "peerjs": "^1.5.4",
     "prop-types": "^15.8.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-scripts": "5.0.1",
+    "socket.io": "^4.8.1",
+    "socket.io-client": "^4.8.1",
     "stockfish": "^16.0.0",
     "web-vitals": "^2.1.4"
   },
@@ -22,7 +25,9 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "server": "node server.js",
+    "dev": "concurrently \"npm run start\" \"npm run server\""
   },
   "eslintConfig": {
     "extends": [
@@ -41,5 +46,10 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "http-proxy-middleware": "^2.0.9"
+  },
+  "proxy": "http://localhost:3001"
 }
